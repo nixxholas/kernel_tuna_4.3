@@ -275,3 +275,7 @@ source "fs/nls/Kconfig"
 source "fs/dlm/Kconfig"
 
 endmenu
+
+config FSYNC_CONTROL
+	bool
+	default n
