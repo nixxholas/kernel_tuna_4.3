@@ -73,7 +73,10 @@ unsigned int screen_on_min_freq;
 static bool omap_cpufreq_ready;
 static bool omap_cpufreq_suspended;
 static int oc_val;
+<<<<<<< HEAD
 static unsigned int stock_freq_max;
+=======
+>>>>>>> c21a9d1... Variable GPU OC: sysfs interface to cycle through different top gpu speeds (by imoseyon) and set 384 MHz GPU speed as default.
 
 
 static unsigned int omap_getspeed(unsigned int cpu)
@@ -537,6 +540,7 @@ static struct freq_attr gpu_clock = {
     .show = show_gpu_clock,
 };
 
+<<<<<<< HEAD
 #ifdef CONFIG_CUSTOM_VOLTAGE
 static ssize_t show_UV_mV_table(struct cpufreq_policy * policy, char * buf)
 {
@@ -557,6 +561,8 @@ static struct freq_attr omap_UV_mV_table = {
 };
 #endif
 
+=======
+>>>>>>> c21a9d1... Variable GPU OC: sysfs interface to cycle through different top gpu speeds (by imoseyon) and set 384 MHz GPU speed as default.
 /*
  * Variable GPU OC - sysfs interface for cycling through different GPU top speeds
  * Author: imoseyon@gmail.com
@@ -605,9 +611,12 @@ static struct freq_attr *omap_cpufreq_attr[] = {
 	&omap_cpufreq_attr_screen_on_freq,
 	&gpu_clock,
 	&gpu_oc,
+<<<<<<< HEAD
 #ifdef CONFIG_CUSTOM_VOLTAGE
 	&omap_UV_mV_table,
 #endif
+=======
+>>>>>>> c21a9d1... Variable GPU OC: sysfs interface to cycle through different top gpu speeds (by imoseyon) and set 384 MHz GPU speed as default.
 	NULL,
 };
 
@@ -661,7 +670,11 @@ static int __init omap_cpufreq_init(void)
 {
 	int ret;
 
+<<<<<<< HEAD
 	oc_val = 0;
+=======
+	oc_val = 1;
+>>>>>>> c21a9d1... Variable GPU OC: sysfs interface to cycle through different top gpu speeds (by imoseyon) and set 384 MHz GPU speed as default.
 
 	if (cpu_is_omap24xx())
 		mpu_clk_name = "virt_prcm_set";
