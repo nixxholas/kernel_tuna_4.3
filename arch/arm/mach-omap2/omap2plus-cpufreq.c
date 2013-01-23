@@ -42,10 +42,6 @@
 
 #include "dvfs.h"
 
-#ifdef CONFIG_CUSTOM_VOLTAGE
-#include <linux/custom_voltage.h>
-#endif
-
 #ifdef CONFIG_SMP
 struct lpj_info {
 	unsigned long	ref;
@@ -64,19 +60,15 @@ static struct device *mpu_dev;
 static DEFINE_MUTEX(omap_cpufreq_lock);
 
 static unsigned int max_thermal;
-unsigned int max_capped;
+static unsigned int max_capped;
 static unsigned int min_capped;
 static unsigned int max_freq;
 static unsigned int current_target_freq;
-unsigned int screen_off_max_freq;
-unsigned int screen_on_min_freq;
+static unsigned int screen_off_max_freq;
+static unsigned int screen_on_min_freq;
 static bool omap_cpufreq_ready;
 static bool omap_cpufreq_suspended;
 static int oc_val;
-<<<<<<< HEAD
-static unsigned int stock_freq_max;
-=======
->>>>>>> c21a9d1... Variable GPU OC: sysfs interface to cycle through different top gpu speeds (by imoseyon) and set 384 MHz GPU speed as default.
 
 
 static unsigned int omap_getspeed(unsigned int cpu)
@@ -90,40 +82,9 @@ static unsigned int omap_getspeed(unsigned int cpu)
 	return rate;
 }
 
-static void omap_cpufreq_lpj_recalculate(unsigned int target_freq,
-					 unsigned int cur_freq)
-{
- #ifdef CONFIG_SMP
-	unsigned int i;
-
-	/*
-	 * Note that loops_per_jiffy is not updated on SMP systems in
-	 * cpufreq driver. So, update the per-CPU loops_per_jiffy value
-	 * on frequency transition. We need to update all dependent CPUs.
-	 */
-	for_each_possible_cpu(i) {
-		struct lpj_info *lpj = &per_cpu(lpj_ref, i);
-		if (!lpj->freq) {
-			lpj->ref = per_cpu(cpu_data, i).loops_per_jiffy;
-			lpj->freq = cur_freq;
-		}
-
-		per_cpu(cpu_data, i).loops_per_jiffy =
-			cpufreq_scale(lpj->ref, lpj->freq, target_freq);
-	}
-
-	/* And don't forget to adjust the global one */
-	if (!global_lpj_ref.freq) {
-		global_lpj_ref.ref = loops_per_jiffy;
-		global_lpj_ref.freq = cur_freq;
-	}
-	loops_per_jiffy = cpufreq_scale(global_lpj_ref.ref, global_lpj_ref.freq,
-					target_freq);
-#endif
-}
-
 static int omap_cpufreq_scale(unsigned int target_freq, unsigned int cur_freq)
 {
+	unsigned int i;
 	int ret;
 	struct cpufreq_freqs freqs;
 
@@ -156,15 +117,35 @@ static int omap_cpufreq_scale(unsigned int target_freq, unsigned int cur_freq)
 	pr_info("cpufreq-omap: transition: %u --> %u\n", freqs.old, freqs.new);
 #endif
 
-	if (target_freq > cur_freq)
-		omap_cpufreq_lpj_recalculate(freqs.new, freqs.old);
-
 	ret = omap_device_scale(mpu_dev, mpu_dev, freqs.new * 1000);
 
 	freqs.new = omap_getspeed(0);
 
-	if (target_freq < cur_freq)
-		omap_cpufreq_lpj_recalculate(freqs.new, freqs.old);
+#ifdef CONFIG_SMP
+	/*
+	 * Note that loops_per_jiffy is not updated on SMP systems in
+	 * cpufreq driver. So, update the per-CPU loops_per_jiffy value
+	 * on frequency transition. We need to update all dependent CPUs.
+	 */
+	for_each_possible_cpu(i) {
+		struct lpj_info *lpj = &per_cpu(lpj_ref, i);
+		if (!lpj->freq) {
+			lpj->ref = per_cpu(cpu_data, i).loops_per_jiffy;
+			lpj->freq = freqs.old;
+		}
+
+		per_cpu(cpu_data, i).loops_per_jiffy =
+			cpufreq_scale(lpj->ref, lpj->freq, freqs.new);
+	}
+
+	/* And don't forget to adjust the global one */
+	if (!global_lpj_ref.freq) {
+		global_lpj_ref.ref = loops_per_jiffy;
+		global_lpj_ref.freq = freqs.old;
+	}
+	loops_per_jiffy = cpufreq_scale(global_lpj_ref.ref, global_lpj_ref.freq,
+					freqs.new);
+#endif
 
 	/* notifiers */
 	for_each_online_cpu(freqs.cpu)
@@ -269,7 +250,6 @@ static int omap_target(struct cpufreq_policy *policy,
 
 	ret = cpufreq_frequency_table_target(policy, freq_table, target_freq,
 			relation, &i);
-
 	if (ret) {
 		dev_dbg(mpu_dev, "%s: cpu%d: no freq match for %d(ret=%d)\n",
 			__func__, policy->cpu, target_freq, ret);
@@ -279,12 +259,6 @@ static int omap_target(struct cpufreq_policy *policy,
 	mutex_lock(&omap_cpufreq_lock);
 
 	current_target_freq = freq_table[i].frequency;
-
-	if (current_target_freq > stock_freq_max) {
-		current_target_freq = policy->max;
-		if (current_target_freq == policy->cur)
-			current_target_freq = stock_freq_max;
-	}
 
 	if (!omap_cpufreq_suspended)
 		ret = omap_cpufreq_scale(current_target_freq, policy->cur);
@@ -399,7 +373,7 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
 	cpufreq_frequency_table_get_attr(freq_table, policy->cpu);
 
 	policy->min = 192000;
-	policy->max = stock_freq_max = 1228800;
+	policy->max = 1228800;
 	policy->cur = omap_getspeed(policy->cpu);
 
 	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
@@ -420,9 +394,6 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
 
 	/* FIXME: what's the actual transition time? */
 	policy->cpuinfo.transition_latency = 30 * 1000;
-#ifdef CONFIG_CUSTOM_VOLTAGE
-	customvoltage_register_freqmutex(&omap_cpufreq_lock);
-#endif
 
 	return 0;
 
@@ -540,29 +511,6 @@ static struct freq_attr gpu_clock = {
     .show = show_gpu_clock,
 };
 
-<<<<<<< HEAD
-#ifdef CONFIG_CUSTOM_VOLTAGE
-static ssize_t show_UV_mV_table(struct cpufreq_policy * policy, char * buf)
-{
-    return customvoltage_mpuvolt_read(NULL, NULL, buf);
-}
-
-static ssize_t store_UV_mV_table(struct cpufreq_policy * policy, const char * buf, size_t count)
-{
-    return customvoltage_mpuvolt_write(NULL, NULL, buf, count);
-}
-
-static struct freq_attr omap_UV_mV_table = {
-    .attr = {.name = "UV_mV_table",
-	     .mode=0644,
-    },
-    .show = show_UV_mV_table,
-    .store = store_UV_mV_table,
-};
-#endif
-
-=======
->>>>>>> c21a9d1... Variable GPU OC: sysfs interface to cycle through different top gpu speeds (by imoseyon) and set 384 MHz GPU speed as default.
 /*
  * Variable GPU OC - sysfs interface for cycling through different GPU top speeds
  * Author: imoseyon@gmail.com
@@ -611,12 +559,6 @@ static struct freq_attr *omap_cpufreq_attr[] = {
 	&omap_cpufreq_attr_screen_on_freq,
 	&gpu_clock,
 	&gpu_oc,
-<<<<<<< HEAD
-#ifdef CONFIG_CUSTOM_VOLTAGE
-	&omap_UV_mV_table,
-#endif
-=======
->>>>>>> c21a9d1... Variable GPU OC: sysfs interface to cycle through different top gpu speeds (by imoseyon) and set 384 MHz GPU speed as default.
 	NULL,
 };
 
@@ -670,11 +612,7 @@ static int __init omap_cpufreq_init(void)
 {
 	int ret;
 
-<<<<<<< HEAD
-	oc_val = 0;
-=======
 	oc_val = 1;
->>>>>>> c21a9d1... Variable GPU OC: sysfs interface to cycle through different top gpu speeds (by imoseyon) and set 384 MHz GPU speed as default.
 
 	if (cpu_is_omap24xx())
 		mpu_clk_name = "virt_prcm_set";
