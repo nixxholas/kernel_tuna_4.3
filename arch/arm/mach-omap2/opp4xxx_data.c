@@ -204,10 +204,10 @@ static struct omap_vdd_dep_volt omap446x_vdd_mpu_core_dep_data[] = {
 	{.main_vdd_volt = OMAP4460_VDD_MPU_OPP25_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
 	{.main_vdd_volt = OMAP4460_VDD_MPU_OPP50_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
 	{.main_vdd_volt = OMAP4460_VDD_MPU_OPP75_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
-	{.main_vdd_volt = OMAP4460_VDD_MPU_OPP100_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_UV},
-	{.main_vdd_volt = OMAP4460_VDD_MPU_OPPTURBO_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_UV},
-	{.main_vdd_volt = OMAP4460_VDD_MPU_OPPNITRO_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_UV},
-	{.main_vdd_volt = OMAP4460_VDD_MPU_OPP_1_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_OV_UV},
+	{.main_vdd_volt = OMAP4460_VDD_MPU_OPP100_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
+	{.main_vdd_volt = OMAP4460_VDD_MPU_OPPTURBO_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
+	{.main_vdd_volt = OMAP4460_VDD_MPU_OPPNITRO_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
+	{.main_vdd_volt = OMAP4460_VDD_MPU_OPP_1_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
 };
 
 struct omap_vdd_dep_info omap446x_vddmpu_dep_info[] = {
@@ -222,8 +222,8 @@ struct omap_vdd_dep_info omap446x_vddmpu_dep_info[] = {
 /* OMAP 4460 MPU IVA VDD dependency table */
 static struct omap_vdd_dep_volt omap446x_vdd_iva_core_dep_data[] = {
 	{.main_vdd_volt = OMAP4460_VDD_IVA_OPP50_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
-	{.main_vdd_volt = OMAP4460_VDD_IVA_OPP100_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_UV},
-	{.main_vdd_volt = OMAP4460_VDD_IVA_OPPTURBO_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP100_UV},
+	{.main_vdd_volt = OMAP4460_VDD_IVA_OPP100_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
+	{.main_vdd_volt = OMAP4460_VDD_IVA_OPPTURBO_UV, .dep_vdd_volt = OMAP4460_VDD_CORE_OPP50_UV},
 };
 
 struct omap_vdd_dep_info omap446x_vddiva_dep_info[] = {
