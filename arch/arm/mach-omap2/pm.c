@@ -473,6 +473,7 @@ static void __init omap4_init_voltages(void)
 	}
 	omap2_set_init_voltage("core", "virt_l3_ck", l3_dev);
 	omap2_set_init_voltage("iva", "dpll_iva_m5x2_ck", iva_dev);
+	opp_enable(iva_dev, 266100000);
 }
 
 static int __init omap2_common_pm_init(void)
