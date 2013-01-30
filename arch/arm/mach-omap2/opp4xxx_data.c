@@ -256,7 +256,7 @@ static struct omap_opp_def __initdata omap446x_opp_def_list[] = {
 	/* IVA OPP1 - OPP50 */
 	OPP_INITIALIZER("iva", "dpll_iva_m5x2_ck", "iva", true, 133000000, OMAP4460_VDD_IVA_OPP50_UV),
 	/* IVA OPP2 - OPP100 */
-	OPP_INITIALIZER("iva", "dpll_iva_m5x2_ck", "iva", true, 266100000, OMAP4460_VDD_IVA_OPP100_UV),
+	OPP_INITIALIZER("iva", "dpll_iva_m5x2_ck", "iva", false, 266100000, OMAP4460_VDD_IVA_OPP100_UV),	
 	/*
 	 * IVA OPP3 - OPP-Turbo + Disabled as the reference schematics
 	 * recommends Phoenix VCORE2 which can supply only 600mA - so the ones
