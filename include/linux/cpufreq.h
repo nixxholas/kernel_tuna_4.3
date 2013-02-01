@@ -376,6 +376,9 @@ extern struct cpufreq_governor cpufreq_gov_dynamic_interactive;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMANDX)
 extern struct cpufreq_governor cpufreq_gov_ondemandx;
 #define CPUFREQ_DEFAULT_GOVERNOR  (&cpufreq_gov_ondemandx)
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMANDPLUS)
+extern struct cpufreq_governor cpufreq_gov_ondemandplus;
+#define CPUFREQ_DEFAULT_GOVERNOR  (&cpufreq_gov_ondemandplus)
 
 #endif
 
@@ -426,6 +429,9 @@ extern int cpufreq_frequency_table_next_lowest(struct cpufreq_policy *policy,
 extern int cpufreq_frequency_table_next_highest(struct cpufreq_policy *policy,
 					struct cpufreq_frequency_table *table,
 					int *index);
+
+extern unsigned int screen_off_max_freq;
+extern unsigned int screen_on_min_freq;
 
 
 #endif /* _LINUX_CPUFREQ_H */
