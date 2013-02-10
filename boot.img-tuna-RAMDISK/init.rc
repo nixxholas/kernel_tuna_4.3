@@ -20,7 +20,10 @@ on early-init
 
 # create mountpoints
     mkdir /mnt 0775 root system
-
+    mkdir /storage 0050 root sdcard_r
+    # Create mountpoint so Dalvik can mark as slave in zygotes.
+    mount tmpfs tmpfs /storage mode=0050,uid=0,gid=1028
+	
 on init
 
 sysclktz 0
@@ -59,6 +62,7 @@ loglevel 3
 
     # See storage config details at http://source.android.com/tech/storage/
     mkdir /mnt/shell 0700 shell shell
+	# Ensure permissions are set appropriately after device early-init.
     mkdir /storage 0050 root sdcard_r
 
     # Directory for putting things only root should see.
@@ -123,6 +127,9 @@ loglevel 3
 # Allow everybody to read the xt_qtaguid resource tracking misc dev.
 # This is needed by any process that uses socket tagging.
     chmod 0644 /dev/xt_qtaguid
+
+# Enable multi-core scheduling power savings
+    write /sys/devices/system/cpu/sched_mc_power_savings 2
 
 # Set max screen-off frequency on boot
     write /sys/devices/system/cpu/cpu0/cpufreq/screen_off_max_freq 537600
@@ -531,7 +538,4 @@ on property:dev.bootcomplete=1
 
 # Fix some governors not getting max cpu freq properly
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 1228800
-
-# Enable multi-core scheduling power savings
-    write /sys/devices/system/cpu/sched_mc_power_savings 2
 
