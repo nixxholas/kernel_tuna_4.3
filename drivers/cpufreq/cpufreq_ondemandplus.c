@@ -85,8 +85,6 @@ static cpumask_t down_cpumask;
 static spinlock_t down_cpumask_lock;
 static struct mutex set_speed_lock;
 
-static unsigned long freq_step_changed = 1;
-
 /*
  * Tunables start
  */
@@ -94,17 +92,23 @@ static unsigned long freq_step_changed = 1;
 #define DEFAULT_TIMER_RATE (30 * USEC_PER_MSEC)
 static unsigned long timer_rate;
 
-#define DEFAULT_FREQ_STEP 70
-static unsigned long freq_step;
-
-#define DEFAULT_FREQ_STEP_STAY_CYCLES 3
-static unsigned long freq_step_stay_cycles;
-
 #define DEFAULT_UP_THRESHOLD 80
 static unsigned long up_threshold;
 
 #define DEFAULT_DOWN_DIFFERENTIAL 10
 static unsigned long down_differential;
+
+#define DEFAULT_INTER_HIFREQ 1036800
+static u64 inter_hifreq;
+
+#define DEFAULT_INTER_LOFREQ 729600
+static u64 inter_lofreq;
+
+#define DEFAULT_INTER_STAYCYCLES 3
+static unsigned long inter_staycycles;
+
+#define DEFAULT_STAYCYCLES_RESETFREQ 500000
+static u64 staycycles_resetfreq;
 
 /*
  * Tunables end
@@ -138,9 +142,6 @@ static void cpufreq_ondemandplus_timer(unsigned long data)
 	u64 now_idle;
 	unsigned int new_freq;
 	unsigned int index;
-	static unsigned int freq_lo;
-	static unsigned int freq_hi;
-	static unsigned int stay_counter_reset_freq;
 	static unsigned int stay_counter;
 	unsigned long flags;
 
@@ -195,14 +196,21 @@ static void cpufreq_ondemandplus_timer(unsigned long data)
 			100 * (delta_time - delta_idle) / delta_time;
 
 	/*
-	 * Choose greater of short-term load (since last idle timer
-	 * started or timer function re-armed itself) or long-term load
-	 * (since last frequency change).
+	 * If short-term load (since last idle timer started or
+	 * timer function re-armed itself) is higher than long-term 
+	 * load (since last frequency change), use short-term load
+	 * to be able to scale up quickly.
+	 * When long-term load is higher than short-term load, 
+	 * use the average of short-term load and long-term load
+	 * (instead of just long-term load) to be able to scale
+	 * down faster, with the long-term load being able to delay 
+	 * down scaling a little to maintain responsiveness.
 	 */
-	if (load_since_change > cpu_load)
-		cpu_load = load_since_change;
+	if (load_since_change > cpu_load) {
+		cpu_load = (cpu_load + load_since_change) / 2;
+	}
 
-	load_freq = cpu_load * pcpu->policy->cur;
+	load_freq = cpu_load * pcpu->target_freq;
 
 	new_freq = pcpu->target_freq;
 
@@ -260,58 +268,15 @@ static void cpufreq_ondemandplus_timer(unsigned long data)
 			/* if we are already at full speed then break out early */
 			if (pcpu->target_freq < pcpu->policy->max) {
 
-				if (freq_step) {
-					/* 
-					* if freq_step has been changed, recalculate freq_lo,
-					* freq_hi and stay_counter_reset_freq
-					*/
-					if (freq_step_changed) {
-
-						unsigned int freq;
-
-						freq = pcpu->policy->max * freq_step / 100;
-				
-						index = 0;
-						cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table, freq,
-								CPUFREQ_RELATION_L, &index);
-						freq_hi = pcpu->freq_table[index].frequency;
-						if (freq_hi < screen_on_min_freq) {
-							freq_hi = screen_on_min_freq;
-						}
-
-						index = 0;
-						cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table, freq,
-								CPUFREQ_RELATION_H, &index);
-						freq_lo = pcpu->freq_table[index].frequency;
-						if (freq_lo < screen_on_min_freq) {
-							freq_lo = screen_on_min_freq;
-						}
-
-						stay_counter_reset_freq = (pcpu->policy->max - pcpu->policy->max *
-								freq_step / 100) * 3 / 2;
-						if (stay_counter_reset_freq > freq_lo) {
-							stay_counter_reset_freq = freq_lo;
-						}
-						if (stay_counter_reset_freq < screen_on_min_freq) {
-							stay_counter_reset_freq = screen_on_min_freq;
-						}
-						
-						freq_step_changed = 0;
-					}
-
-					if (stay_counter == 0) {
-						new_freq = freq_lo;
-						stay_counter++;
-					} else if (stay_counter == 1 && freq_step_stay_cycles != 1) {
-						new_freq = freq_hi;
-						stay_counter++;
-					} else if (stay_counter < freq_step_stay_cycles || 
-							freq_step_stay_cycles == 0) {
-						stay_counter++;
-						goto rearm;
-					} else {
-						new_freq = pcpu->policy->max;
-					}
+				if (stay_counter == 0 && inter_staycycles != 0) {
+					new_freq = inter_lofreq;
+					stay_counter++;
+				} else if (stay_counter == 1 && inter_staycycles != 1) {
+					new_freq = inter_hifreq;
+					stay_counter++;
+				} else if (stay_counter < inter_staycycles) {
+					stay_counter++;
+					goto rearm;
 				} else {
 					new_freq = pcpu->policy->max;
 				}
@@ -332,7 +297,7 @@ static void cpufreq_ondemandplus_timer(unsigned long data)
 				new_freq = load_freq /
 						(up_threshold - down_differential);
 
-				if (new_freq <= stay_counter_reset_freq) {
+				if (new_freq <= staycycles_resetfreq) {
 					stay_counter = 0;
 				}
 
@@ -627,59 +592,6 @@ static ssize_t store_timer_rate(struct kobject *kobj,
 static struct global_attr timer_rate_attr = __ATTR(timer_rate, 0644,
 		show_timer_rate, store_timer_rate);
 	
-static ssize_t show_freq_step(struct kobject *kobj,
-			struct attribute *attr, char *buf)
-{
-	return sprintf(buf, "%lu\n", freq_step);
-}
-
-static ssize_t store_freq_step(struct kobject *kobj,
-			struct attribute *attr, const char *buf, size_t count)
-{
-	int ret;
-	unsigned long val;
-
-	ret = strict_strtoul(buf, 0, &val);
-	if (ret < 0)
-		return ret;
-
-	if (val > 99)
-		val	 = 0;
-
-	freq_step = val;
-	freq_step_changed = 1;
-	return count;
-}
-
-static struct global_attr freq_step_attr = __ATTR(freq_step, 0644,
-		show_freq_step, store_freq_step);
-		
-static ssize_t show_freq_step_stay_cycles(struct kobject *kobj,
-			struct attribute *attr, char *buf)
-{
-	return sprintf(buf, "%lu\n", freq_step_stay_cycles);
-}
-
-static ssize_t store_freq_step_stay_cycles(struct kobject *kobj,
-			struct attribute *attr, const char *buf, size_t count)
-{
-	int ret;
-	unsigned long val;
-
-	ret = strict_strtoul(buf, 0, &val);
-	if (ret < 0)
-		return ret;
-		
-	if (val > 5)
-		val	 = 5;
-		
-	freq_step_stay_cycles = val;
-	return count;
-}
-
-static struct global_attr freq_step_stay_cycles_attr = __ATTR(freq_step_stay_cycles, 0644,
-		show_freq_step_stay_cycles, store_freq_step_stay_cycles);
-		
 static ssize_t show_up_threshold(struct kobject *kobj,
 			struct attribute *attr, char *buf)
 {
@@ -731,13 +643,151 @@ static ssize_t store_down_differential(struct kobject *kobj,
 
 static struct global_attr down_differential_attr = __ATTR(down_differential, 0644,
 		show_down_differential, store_down_differential);
+		
+static ssize_t show_inter_hifreq(struct kobject *kobj,
+				 struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%llu\n", inter_hifreq);
+}
+
+static ssize_t store_inter_hifreq(struct kobject *kobj,
+				  struct attribute *attr, const char *buf,
+				  size_t count)
+{
+	int ret;
+	u64 val;
+	struct cpufreq_ondemandplus_cpuinfo *pcpu =
+		&per_cpu(cpuinfo, smp_processor_id());
+	unsigned int index;
+
+	ret = strict_strtoull(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+	
+	index = 0;
+	cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table, val,
+		CPUFREQ_RELATION_L, &index);
+	val = pcpu->freq_table[index].frequency;
+	if (val < screen_on_min_freq) {
+		val = screen_on_min_freq;
+	}
+
+	inter_hifreq = val;
+	
+	return count;
+}
+
+static struct global_attr inter_hifreq_attr = __ATTR(inter_hifreq, 0644,
+		show_inter_hifreq, store_inter_hifreq);
+		
+static ssize_t show_inter_lofreq(struct kobject *kobj,
+				 struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%llu\n", inter_lofreq);
+}
+
+static ssize_t store_inter_lofreq(struct kobject *kobj,
+				  struct attribute *attr, const char *buf,
+				  size_t count)
+{
+	int ret;
+	u64 val;
+	struct cpufreq_ondemandplus_cpuinfo *pcpu =
+		&per_cpu(cpuinfo, smp_processor_id());
+	unsigned int index;
+
+	ret = strict_strtoull(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	index = 0;
+	cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table, val,
+			CPUFREQ_RELATION_H, &index);
+	val = pcpu->freq_table[index].frequency;
+	if (val < screen_on_min_freq) {
+		val = screen_on_min_freq;
+	}	
+	
+	inter_lofreq = val;
+
+	return count;
+}
+
+static struct global_attr inter_lofreq_attr = __ATTR(inter_lofreq, 0644,
+		show_inter_lofreq, store_inter_lofreq);
+
+static ssize_t show_inter_staycycles(struct kobject *kobj,
+					struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%lu\n", inter_staycycles);
+}
+
+static ssize_t store_inter_staycycles(struct kobject *kobj,
+			struct attribute *attr, const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+		
+	if (val > 10)
+		val	 = 10;
+		
+	inter_staycycles = val;
+	return count;
+}
+
+static struct global_attr inter_staycycles_attr = __ATTR(inter_staycycles, 0644,
+		show_inter_staycycles, store_inter_staycycles);
+		
+static ssize_t show_staycycles_resetfreq(struct kobject *kobj,
+				 struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%llu\n", staycycles_resetfreq);
+}
+
+static ssize_t store_staycycles_resetfreq(struct kobject *kobj,
+				  struct attribute *attr, const char *buf,
+				  size_t count)
+{
+	int ret;
+	u64 val;
+	struct cpufreq_ondemandplus_cpuinfo *pcpu =
+		&per_cpu(cpuinfo, smp_processor_id());
+
+	ret = strict_strtoull(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+		
+	if (val < screen_on_min_freq) {
+		val = screen_on_min_freq;
+	}
+
+	if (val > pcpu->policy->max) {
+		val = pcpu->policy->max;
+	}
+
+	if (val > inter_lofreq) {
+		val = inter_lofreq;
+	}
+
+	staycycles_resetfreq = val;
+	return count;
+}
+
+static struct global_attr staycycles_resetfreq_attr = __ATTR(staycycles_resetfreq, 0644,
+		show_staycycles_resetfreq, store_staycycles_resetfreq);
 
 static struct attribute *ondemandplus_attributes[] = {
 	&timer_rate_attr.attr,
-	&freq_step_attr.attr,
-	&freq_step_stay_cycles_attr.attr,
 	&up_threshold_attr.attr,
 	&down_differential_attr.attr,
+	&inter_hifreq_attr.attr,
+	&inter_lofreq_attr.attr,
+	&inter_staycycles_attr.attr,
+	&staycycles_resetfreq_attr.attr,
 	NULL,
 };
 
@@ -852,10 +902,12 @@ static int __init cpufreq_ondemandplus_init(void)
 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
 
 	timer_rate = DEFAULT_TIMER_RATE;
-	freq_step = DEFAULT_FREQ_STEP;
-	freq_step_stay_cycles = DEFAULT_FREQ_STEP_STAY_CYCLES;
 	up_threshold = DEFAULT_UP_THRESHOLD;
 	down_differential = DEFAULT_DOWN_DIFFERENTIAL;
+	inter_hifreq = DEFAULT_INTER_HIFREQ;
+	inter_lofreq = DEFAULT_INTER_LOFREQ;
+	inter_staycycles = DEFAULT_INTER_STAYCYCLES;
+	staycycles_resetfreq = DEFAULT_STAYCYCLES_RESETFREQ;
 
 	/* Initalize per-cpu timers */
 	for_each_possible_cpu(i) {
@@ -914,5 +966,5 @@ module_exit(cpufreq_ondemandplus_exit);
 
 MODULE_AUTHOR("Mike Chan <mike@android.com>");
 MODULE_DESCRIPTION("'cpufreq_ondemandplus' - A cpufreq governor for "
-	"Latency sensitive workloads");
+	"semi-aggressive scaling");
 MODULE_LICENSE("GPL");
