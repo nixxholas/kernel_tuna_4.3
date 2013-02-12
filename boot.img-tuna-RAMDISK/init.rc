@@ -128,9 +128,6 @@ loglevel 3
 # This is needed by any process that uses socket tagging.
     chmod 0644 /dev/xt_qtaguid
 
-# Enable multi-core scheduling power savings
-    write /sys/devices/system/cpu/sched_mc_power_savings 2
-
 # Set max screen-off frequency on boot
     write /sys/devices/system/cpu/cpu0/cpufreq/screen_off_max_freq 537600
 
@@ -538,4 +535,7 @@ on property:dev.bootcomplete=1
 
 # Fix some governors not getting max cpu freq properly
     write /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq 1228800
+
+# Enable multi-core scheduling power savings
+    write /sys/devices/system/cpu/sched_mc_power_savings 2
 
