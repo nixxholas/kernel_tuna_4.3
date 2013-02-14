@@ -585,6 +585,7 @@ static ssize_t store_timer_rate(struct kobject *kobj,
 	ret = strict_strtoul(buf, 0, &val);
 	if (ret < 0)
 		return ret;
+
 	timer_rate = val;
 	return count;
 }
@@ -609,7 +610,10 @@ static ssize_t store_up_threshold(struct kobject *kobj,
 		return ret;
 		
 	if (val > 100)
-		val	 = 100;
+		val = 100;
+
+	if (val < 1)
+		val = 1;
 		
 	up_threshold = val;
 	return count;
@@ -633,10 +637,10 @@ static ssize_t store_down_differential(struct kobject *kobj,
 	ret = strict_strtoul(buf, 0, &val);
 	if (ret < 0)
 		return ret;
-		
+
 	if (val > 100)
-		val	 = 100;
-		
+		val = 100;
+
 	down_differential = val;
 	return count;
 }
@@ -668,12 +672,14 @@ static ssize_t store_inter_hifreq(struct kobject *kobj,
 	cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table, val,
 		CPUFREQ_RELATION_L, &index);
 	val = pcpu->freq_table[index].frequency;
-	if (val < screen_on_min_freq) {
+
+	if (val > pcpu->policy->max)
+		val = pcpu->policy->max;
+
+	if (val < screen_on_min_freq)
 		val = screen_on_min_freq;
-	}
 
 	inter_hifreq = val;
-	
 	return count;
 }
 
@@ -704,12 +710,14 @@ static ssize_t store_inter_lofreq(struct kobject *kobj,
 	cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table, val,
 			CPUFREQ_RELATION_H, &index);
 	val = pcpu->freq_table[index].frequency;
-	if (val < screen_on_min_freq) {
+
+	if (val > pcpu->policy->max)
+		val = pcpu->policy->max;
+
+	if (val < screen_on_min_freq)
 		val = screen_on_min_freq;
-	}	
 	
 	inter_lofreq = val;
-
 	return count;
 }
 
@@ -733,7 +741,7 @@ static ssize_t store_inter_staycycles(struct kobject *kobj,
 		return ret;
 		
 	if (val > 10)
-		val	 = 10;
+		val = 10;
 		
 	inter_staycycles = val;
 	return count;
@@ -761,17 +769,11 @@ static ssize_t store_staycycles_resetfreq(struct kobject *kobj,
 	if (ret < 0)
 		return ret;
 		
-	if (val < screen_on_min_freq) {
-		val = screen_on_min_freq;
-	}
-
-	if (val > pcpu->policy->max) {
+	if (val > pcpu->policy->max)
 		val = pcpu->policy->max;
-	}
 
-	if (val > inter_lofreq) {
-		val = inter_lofreq;
-	}
+	if (val < screen_on_min_freq)
+		val = screen_on_min_freq;
 
 	staycycles_resetfreq = val;
 	return count;
