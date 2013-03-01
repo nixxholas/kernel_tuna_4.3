@@ -89,13 +89,13 @@ static struct mutex set_speed_lock;
  * Tunables start
  */
 
-#define DEFAULT_TIMER_RATE (30 * USEC_PER_MSEC)
+#define DEFAULT_TIMER_RATE (25 * USEC_PER_MSEC)
 static unsigned long timer_rate;
 
 #define DEFAULT_UP_THRESHOLD 80
 static unsigned long up_threshold;
 
-#define DEFAULT_DOWN_DIFFERENTIAL 10
+#define DEFAULT_DOWN_DIFFERENTIAL 34
 static unsigned long down_differential;
 
 #define DEFAULT_INTER_HIFREQ 1036800
@@ -107,7 +107,7 @@ static u64 inter_lofreq;
 #define DEFAULT_INTER_STAYCYCLES 3
 static unsigned long inter_staycycles;
 
-#define DEFAULT_STAYCYCLES_RESETFREQ 500000
+#define DEFAULT_STAYCYCLES_RESETFREQ 450000
 static u64 staycycles_resetfreq;
 
 /*
