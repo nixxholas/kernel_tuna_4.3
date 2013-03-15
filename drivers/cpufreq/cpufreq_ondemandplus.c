@@ -89,13 +89,13 @@ static struct mutex set_speed_lock;
  * Tunables start
  */
 
-#define DEFAULT_TIMER_RATE (25 * USEC_PER_MSEC)
+#define DEFAULT_TIMER_RATE (20 * USEC_PER_MSEC)
 static unsigned long timer_rate;
 
-#define DEFAULT_UP_THRESHOLD 80
+#define DEFAULT_UP_THRESHOLD 87
 static unsigned long up_threshold;
 
-#define DEFAULT_DOWN_DIFFERENTIAL 34
+#define DEFAULT_DOWN_DIFFERENTIAL 54
 static unsigned long down_differential;
 
 #define DEFAULT_INTER_HIFREQ 1036800
@@ -104,7 +104,7 @@ static u64 inter_hifreq;
 #define DEFAULT_INTER_LOFREQ 729600
 static u64 inter_lofreq;
 
-#define DEFAULT_INTER_STAYCYCLES 3
+#define DEFAULT_INTER_STAYCYCLES 2
 static unsigned long inter_staycycles;
 
 #define DEFAULT_STAYCYCLES_RESETFREQ 450000
@@ -305,7 +305,12 @@ static void cpufreq_ondemandplus_timer(unsigned long data)
 					new_freq = screen_on_min_freq;
 				}
 			}
+		} else if (pcpu->target_freq == pcpu->policy->max && 
+				load_freq < (up_threshold - down_differential / 2) * 
+				pcpu->target_freq) {
+			new_freq = load_freq / (up_threshold - down_differential * 2 / 3);
 		}
+
 	}
 
 	if (cpufreq_frequency_table_target(pcpu->policy, pcpu->freq_table,
