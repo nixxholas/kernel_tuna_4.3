@@ -277,6 +277,8 @@ on boot
     chown root system /sys/module/lowmemorykiller/parameters/minfree
     chmod 0664 /sys/module/lowmemorykiller/parameters/minfree
 
+    write /sys/module/lowmemorykiller/parameters/minfree 2560,5120,6912,12800,15104,17152
+
     # Permissions for System Server and daemons.
     chown radio system /sys/android_power/state
     chown radio system /sys/android_power/request_state
