@@ -430,6 +430,6 @@ extern int cpufreq_frequency_table_next_highest(struct cpufreq_policy *policy,
 extern unsigned int screen_off_max_freq;
 extern unsigned int screen_on_min_freq;
 extern unsigned int max_capped;
-
+extern int oc_val;
 
 #endif /* _LINUX_CPUFREQ_H */
