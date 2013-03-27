@@ -148,7 +148,11 @@ struct scan_control {
 /*
  * From 0 .. 100.  Higher means more swappy.
  */
+#ifdef CONFIG_SWAP
 int vm_swappiness = 50;
+#else
+int vm_swappiness = 0;
+#endif
 long vm_total_pages;	/* The total number of pages which the VM controls */
 
 static LIST_HEAD(shrinker_list);
