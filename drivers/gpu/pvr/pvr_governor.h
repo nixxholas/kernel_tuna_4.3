@@ -24,7 +24,7 @@
 #define SGX_SPEED_IDLE		0
 
 /* actual use is more like 4~5 due to delay in the idle timeouts */
-#define SGX_SPEED_THRESHOLD	3
+#define SGX_SPEED_THRESHOLD	2
 
 #define SGX_SPEED_STEPS		3
 
