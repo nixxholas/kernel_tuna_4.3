@@ -71,10 +71,10 @@ static const int bfq_quantum = 4;
 static const int bfq_fifo_expire[2] = { HZ / 4, HZ / 8 };
 
 /* Maximum backwards seek, in KiB. */
-static const int bfq_back_max = 16 * 1024;
+static const int bfq_back_max = 0;
 
 /* Penalty of a backwards seek, in number of sectors. */
-static const int bfq_back_penalty = 2;
+static const int bfq_back_penalty = 1;
 
 /* Idling period duration, in jiffies. */
 static int bfq_slice_idle = HZ / 125;
