@@ -64,7 +64,7 @@ struct regulator {
     struct regulator_dev * rdev;
 };
 
-static int num_mpuvolt, num_corevolt, num_ivavolt, num_regulatorvolt;
+static int num_mpuvolt, num_corevolt, num_ivavolt, num_mpudeps, num_ivadeps, num_regulatorvolt;
 
 static struct mutex * frequency_mutex = NULL;
 static struct mutex * dvfs_mutex = NULL;
@@ -126,6 +126,12 @@ static int * aess_depend = NULL;
 static struct opp ** iva_opp = NULL;
 static struct opp ** dsp_opp = NULL;
 static struct opp ** aess_opp = NULL;
+
+static int * mpu_depindex = NULL;
+static int * mpucore_depindex = NULL;
+
+static int * iva_depindex = NULL;
+static int * ivacore_depindex = NULL;
 
 static unsigned long * new_voltages = NULL;
 
@@ -566,6 +572,60 @@ void customvoltage_init(void)
 		}
 	}
 
+    // MPU->core and IVA->core dependency tables
+    num_mpudeps = mpu_voltdm->vdd->dep_vdd_info->nr_dep_entries;
+
+    mpu_depindex = kzalloc(num_mpudeps * sizeof(int), GFP_KERNEL);
+    mpucore_depindex = kzalloc(num_mpudeps * sizeof(int), GFP_KERNEL);
+
+    for (i = 0; i < num_mpudeps; i++)
+	{
+	    for (j = 0; j < num_mpuvolt; j++)
+		{
+		    if (mpu_voltdm->vdd->dep_vdd_info->dep_table[i].main_vdd_volt
+			== mpu_voltdm->vdd->volt_data[j].volt_nominal)
+			{
+			    mpu_depindex[i] = j;
+			}
+		}
+
+	    for (j = 0; j < num_corevolt; j++)
+		{
+		    if (mpu_voltdm->vdd->dep_vdd_info->dep_table[i].dep_vdd_volt
+			== core_voltdm->vdd->volt_data[j].volt_nominal)
+			{
+			    mpucore_depindex[i] = j;
+			}
+		}
+	}
+
+    num_ivadeps = iva_voltdm->vdd->dep_vdd_info->nr_dep_entries;
+
+    iva_depindex = kzalloc(num_ivadeps * sizeof(int), GFP_KERNEL);
+    ivacore_depindex = kzalloc(num_ivadeps * sizeof(int), GFP_KERNEL);
+
+    for (i = 0; i < num_ivadeps; i++)
+	{
+	    for (j = 0; j < num_ivavolt; j++)
+		{
+		    if (iva_voltdm->vdd->dep_vdd_info->dep_table[i].main_vdd_volt
+			== iva_voltdm->vdd->volt_data[j].volt_nominal)
+			{
+			    iva_depindex[i] = j;
+			}
+		}
+
+	    for (j = 0; j < num_corevolt; j++)
+		{
+		    if (iva_voltdm->vdd->dep_vdd_info->dep_table[i].dep_vdd_volt
+			== core_voltdm->vdd->volt_data[j].volt_nominal)
+			{
+			    ivacore_depindex[i] = j;
+			}
+		}
+	}
+
+
     // Regulators
     mutex_lock(regulator_mutex);
 
@@ -660,6 +720,9 @@ static void customvoltage_mpuvolt_update(void)
 		if (mpu_depend[j] == i)
 		    mpu_opp[j]->u_volt = new_voltages[i];
 	}
+
+    for (i = 0; i < num_mpudeps; i++)
+	mpu_voltdm->vdd->dep_vdd_info->dep_table[i].main_vdd_volt = new_voltages[mpu_depindex[i]];
 
     spin_unlock(&mpu_dvfsinfo->user_lock);
 
@@ -786,6 +849,12 @@ static void customvoltage_corevolt_update(void)
 		    hsi_opp[j]->u_volt = new_voltages[i];
 	}
 
+    for (i = 0; i < num_mpudeps; i++)
+	mpu_voltdm->vdd->dep_vdd_info->dep_table[i].dep_vdd_volt = new_voltages[mpucore_depindex[i]];
+
+    for (i = 0; i < num_ivadeps; i++)
+	iva_voltdm->vdd->dep_vdd_info->dep_table[i].dep_vdd_volt = new_voltages[ivacore_depindex[i]];
+
     spin_unlock(&core_dvfsinfo->user_lock);
 
     omap_sr_disable_reset_volt(core_voltdm);
@@ -905,6 +974,9 @@ static void customvoltage_ivavolt_update(void)
 		if (aess_depend[j] == i)
 		    aess_opp[j]->u_volt = new_voltages[i];
 	}
+
+    for (i = 0; i < num_ivadeps; i++)
+	iva_voltdm->vdd->dep_vdd_info->dep_table[i].main_vdd_volt = new_voltages[iva_depindex[i]];
 
     spin_unlock(&iva_dvfsinfo->user_lock);
 
