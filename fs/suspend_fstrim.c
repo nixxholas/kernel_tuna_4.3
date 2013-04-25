@@ -4,11 +4,15 @@
 #include <linux/earlysuspend.h>
 #include <linux/fs.h>
 
+static u64 resumejiffies;
+
 static void fstrim_early_suspend(struct early_suspend *handler)
 {
-	static unsigned long lasttrimjiffies;
+	static u64 awakejiffies;
 
-	if (jiffies - lasttrimjiffies >= 900 * HZ) {
+	awakejiffies += (jiffies - resumejiffies);
+
+	if (awakejiffies >= 360 * HZ) {
 		char *argv[] = { "/sbin/fstrim", "/cache", NULL };
 		static char *envp[] = {
         		"HOME=/",
@@ -17,12 +21,18 @@ static void fstrim_early_suspend(struct early_suspend *handler)
 
 		call_usermodehelper( argv[0], argv, envp, UMH_WAIT_EXEC );
 
-		lasttrimjiffies = jiffies;
+		awakejiffies = 0;
 	}
+}
+
+static void fstrim_late_resume(struct early_suspend *handler)
+{
+	resumejiffies = jiffies;
 }
 
 static struct early_suspend suspend_fstrim = {
 	.suspend = fstrim_early_suspend,
+	.resume = fstrim_late_resume,
 };
 
 void __init suspend_fstrim_init(void)
