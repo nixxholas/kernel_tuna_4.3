@@ -543,7 +543,7 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 		power_mode = PM_FAST;
 	/* wl_pkt_filter_enable_t	enable_parm; */
 	char iovbuf[32];
-	int bcn_li_dtim = 3;
+	int bcn_li_dtim = 0; /* Default bcn_li_dtim in resume mode is 0 */
 	uint roamvar = 1;
 
 	DHD_TRACE(("%s: enter, value = %d in_suspend=%d\n",
