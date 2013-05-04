@@ -1822,7 +1822,7 @@ dhd_get_dtim_skip(dhd_pub_t *dhd)
 	}
 
 	if ((dhd->dtim_skip == 0) || (dhd->dtim_skip == 1))
-		bcn_li_dtim = 1;
+		bcn_li_dtim = 3;
 	else
 		bcn_li_dtim = dhd->dtim_skip;
 
