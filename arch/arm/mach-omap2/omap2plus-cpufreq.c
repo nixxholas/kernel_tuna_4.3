@@ -72,7 +72,7 @@ unsigned int screen_off_max_freq;
 unsigned int screen_on_min_freq;
 static bool omap_cpufreq_ready;
 static bool omap_cpufreq_suspended;
-int oc_val = 1;
+int oc_val = 0;
 
 
 static unsigned int omap_getspeed(unsigned int cpu)

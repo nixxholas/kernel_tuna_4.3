@@ -23,7 +23,7 @@
 
 #include "pvr_governor.h"
 
-static uint sgxGovType = 1;	/* 2 - "powersave", 1 - "ondemand", 0 - "performance" */
+static uint sgxGovType = 0;	/* 2 - "powersave", 1 - "ondemand", 0 - "performance" */
 static uint sgxBusyCount = 0;
 static long unsigned sgxGovernorStats[SGX_SPEED_STEPS] =
 	{0, 0, 0};
