@@ -231,7 +231,7 @@ int omap4_prcm_freq_update(void)
 #define OMAP_1_5GHz	1420800000
 #define OMAP_1_2GHz	1228800000
 #define OMAP_920MHz	1036800000
-#define OMAP_748MHz	729600000
+#define OMAP_748MHz	806400000
 
 /* Supported only on OMAP4 */
 int omap4_dpllmx_gatectrl_read(struct clk *clk)
