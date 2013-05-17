@@ -1,8 +1,9 @@
 /*
- * Simple IO scheduler
+ * Simple IO scheduler plus
  * Based on Noop, Deadline and V(R) IO schedulers.
  *
  * Copyright (C) 2012 Miguel Boton <mboton@gmail.com>
+ *           (C) 2013 Boy Petersen <boypetersen@gmail.com>
  *
  *
  * This algorithm does not do any kind of sorting, as it is aimed for
@@ -11,6 +12,9 @@
  *
  * Asynchronous and synchronous requests are not treated separately, but
  * we relay on deadlines to ensure fairness.
+ *
+ * The plus version fixes writes_starved not being initialized on startup
+ * and also modifies the write starvation counting logic.
  *
  */
 #include <linux/blkdev.h>
@@ -23,13 +27,13 @@
 enum { ASYNC, SYNC };
 
 /* Tunables */
-static const int sync_read_expire = (HZ / 2) * 3;	/* max time before a sync read is submitted. */
+static const int sync_read_expire = (HZ / 16) * 5;	/* max time before a sync read is submitted. */
 static const int sync_write_expire = HZ * 3;	/* max time before a sync write is submitted. */
 
 static const int async_read_expire = HZ * 4;	/* ditto for async, these limits are SOFT! */
 static const int async_write_expire = HZ * 16;	/* ditto for async, these limits are SOFT! */
 
-static const int writes_starved = 1;		/* max times reads can starve a write */
+static const int writes_starved = 2;		/* max times reads can starve a write */
 static const int fifo_batch     = 1;		/* # of sequential requests treated as one
 						   by the above parameters. For throughput. */
 
@@ -176,10 +180,13 @@ sio_dispatch_request(struct sio_data *sd, struct request *rq)
 
 	sd->batched++;
 
-	if (rq_data_dir(rq))
+	if (rq_data_dir(rq)) {
 		sd->starved = 0;
-	else
-		sd->starved++;
+	} else {
+		if (!list_empty(&sd->fifo_list[SYNC][WRITE]) || 
+				!list_empty(&sd->fifo_list[ASYNC][WRITE]))
+			sd->starved++;
+	}
 }
 
 static int
@@ -265,6 +272,7 @@ sio_init_queue(struct request_queue *q)
 	sd->fifo_expire[ASYNC][READ] = async_read_expire;
 	sd->fifo_expire[ASYNC][WRITE] = async_write_expire;
 	sd->fifo_batch = fifo_batch;
+	sd->writes_starved = writes_starved;
 
 	return sd;
 }
@@ -357,7 +365,7 @@ static struct elv_fs_entry sio_attrs[] = {
 	__ATTR_NULL
 };
 
-static struct elevator_type iosched_sio = {
+static struct elevator_type iosched_sioplus = {
 	.ops = {
 		.elevator_merge_req_fn		= sio_merged_requests,
 		.elevator_dispatch_fn		= sio_dispatch_requests,
@@ -370,27 +378,27 @@ static struct elevator_type iosched_sio = {
 	},
 
 	.elevator_attrs = sio_attrs,
-	.elevator_name = "sio",
+	.elevator_name = "sioplus",
 	.elevator_owner = THIS_MODULE,
 };
 
-static int __init sio_init(void)
+static int __init sioplus_init(void)
 {
 	/* Register elevator */
-	elv_register(&iosched_sio);
+	elv_register(&iosched_sioplus);
 
 	return 0;
 }
 
-static void __exit sio_exit(void)
+static void __exit sioplus_exit(void)
 {
 	/* Unregister elevator */
-	elv_unregister(&iosched_sio);
+	elv_unregister(&iosched_sioplus);
 }
 
-module_init(sio_init);
-module_exit(sio_exit);
+module_init(sioplus_init);
+module_exit(sioplus_exit);
 
 MODULE_AUTHOR("Miguel Boton");
 MODULE_LICENSE("GPL");
-MODULE_DESCRIPTION("Simple IO scheduler");
+MODULE_DESCRIPTION("Simple IO scheduler plus");
