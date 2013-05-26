@@ -101,7 +101,7 @@ static unsigned long down_differential;
 #define DEFAULT_INTER_HIFREQ 1036800
 static u64 inter_hifreq;
 
-#define DEFAULT_INTER_LOFREQ 806400
+#define DEFAULT_INTER_LOFREQ 729600
 static u64 inter_lofreq;
 
 #define DEFAULT_INTER_STAYCYCLES 2
