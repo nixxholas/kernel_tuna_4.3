@@ -346,6 +346,12 @@ uint packet_filter_override = 0;
 module_param(packet_filter_override, uint, 0644);
 #endif /* defined(CONFIG_HAS_EARLYSUSPEND) */
 
+/* Control wifi drop workaround
+ * /sys/module/bcmdhd/wifi_drop_workaround
+ */
+uint wifi_drop_workaround = 0;
+module_param(wifi_drop_workaround, uint, 0644);
+
 /* ARP offload agent mode : enable ARP Peer Auto-Reply */
 uint dhd_arp_mode = ARP_OL_AGENT | ARP_OL_PEER_AUTO_REPLY;
 module_param(dhd_arp_mode, uint, 0);
