@@ -95,7 +95,7 @@ static unsigned long timer_rate;
 #define DEFAULT_UP_THRESHOLD 87
 static unsigned long up_threshold;
 
-#define DEFAULT_DOWN_DIFFERENTIAL 54
+#define DEFAULT_DOWN_DIFFERENTIAL 58
 static unsigned long down_differential;
 
 #define DEFAULT_INTER_HIFREQ 1036800
