@@ -36,8 +36,6 @@
 #include <dngl_stats.h>
 #include <dhd.h>
 #include <bcmsdbus.h>
-#include <linux/kmod.h>
-#include <linux/fs.h>
 #ifdef WL_CFG80211
 #include <wl_cfg80211.h>
 #endif
@@ -97,8 +95,6 @@
 #define PNO_TLV_TYPE_TIME		'T'
 #define PNO_TLV_FREQ_REPEAT		'R'
 #define PNO_TLV_FREQ_EXPO_MAX		'M'
-
-#define WIFI_DROP_WA_SCRIPT_PATH "/sbin/wifi_drop_wa"
 
 typedef struct cmd_tlv {
 	char prefix;
@@ -405,11 +401,6 @@ int wl_android_wifi_on(struct net_device *dev)
 int wl_android_wifi_off(struct net_device *dev)
 {
 	int ret = 0;
-	char *argv[] = { "/system/bin/sh", WIFI_DROP_WA_SCRIPT_PATH, NULL };
-	static char *envp[] = {
-		"HOME=/",
-		"TERM=linux",
-		"PATH=/sbin:/system/bin", NULL };
 
 	printk("%s in\n", __FUNCTION__);
 	if (!dev) {
@@ -425,9 +416,6 @@ int wl_android_wifi_off(struct net_device *dev)
 		g_wifi_on = 0;
 	}
 	dhd_net_if_unlock(dev);
-
-	if (wifi_drop_workaround == 1)
-		call_usermodehelper( argv[0], argv, envp, UMH_WAIT_EXEC );
 
 	return ret;
 }

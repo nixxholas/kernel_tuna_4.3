@@ -785,6 +785,4 @@ int dhd_arp_get_arp_hostip_table(dhd_pub_t *dhd, void *buf, int buflen);
 void dhd_arp_offload_add_ip(dhd_pub_t *dhd, uint32 ipaddr);
 #endif /* ARP_OFFLOAD_SUPPORT */
 
-extern unsigned int wifi_drop_workaround;
-
 #endif /* _dhd_h_ */
