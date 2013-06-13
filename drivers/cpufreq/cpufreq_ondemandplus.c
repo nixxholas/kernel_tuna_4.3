@@ -395,12 +395,13 @@ rearm:
 		 */
 		if (i >= 4) {
 			unsigned int k;
+			avg_cpu_freq = 0;
 			for (k = 0; k <= 4; k++) {
 				avg_cpu_freq += last_cpu_freqs[k];
 			}
-			i = 0;
-			hi_avg_cpu_freq = ((avg_cpu_freq / 5) * 115) / 100;
-			lo_avg_cpu_freq = ((avg_cpu_freq / 5) * 100) / 115;
+			avg_cpu_freq /= 5;
+			hi_avg_cpu_freq = (avg_cpu_freq * 115) / 100;
+			lo_avg_cpu_freq = (avg_cpu_freq * 100) / 115;
 
 			if (new_freq < inter_lofreq && hi_avg_cpu_freq > new_freq && 
 						lo_avg_cpu_freq < new_freq) {
@@ -413,6 +414,7 @@ rearm:
 			} else {
 				low_timer_rate = 0;
 			}
+			i = 0;
 		} else {
 			if (new_freq < inter_lofreq && (hi_avg_cpu_freq < new_freq ||
 						lo_avg_cpu_freq > new_freq))
