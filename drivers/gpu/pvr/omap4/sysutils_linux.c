@@ -52,10 +52,6 @@
 #include "pvr_drm.h"
 #endif
 
-#ifdef CONFIG_PVR_GOVERNOR
-#include "pvr_governor.h"
-#endif
-
 #define	ONE_MHZ	1000000
 #define	HZ_TO_MHZ(m) ((m) / ONE_MHZ)
 
@@ -155,14 +151,7 @@ void RequestSGXFreq(SYS_DATA *psSysData, IMG_BOOL bMaxFreq)
 	int res;
 
 	pdata = (struct gpu_platform_data *)gpsPVRLDMDev->dev.platform_data;
-
-#ifdef CONFIG_PVR_GOVERNOR
-	freq_index = PVRSimpleGovernor(bMaxFreq);
-#else
 	freq_index = bMaxFreq ? psSysSpecData->ui32SGXFreqListSize - 2 : 0;
-#endif
-	// faux123 debug
-	//pr_info("PVR freq req idx: %u\n", freq_index);
 
 	if (psSysSpecData->ui32SGXFreqListIndex != freq_index)
 	{
@@ -170,8 +159,6 @@ void RequestSGXFreq(SYS_DATA *psSysData, IMG_BOOL bMaxFreq)
 		res = pdata->device_scale(&gpsPVRLDMDev->dev,
 					  &gpsPVRLDMDev->dev,
 					  psSysSpecData->pui32SGXFreqList[freq_index]);
-		// faux123 debug
-		//pr_info(" PVR freq: %u\n", psSysSpecData->pui32SGXFreqList[freq_index]);
 
 		if (res == 0)
 			psSysSpecData->ui32SGXFreqListIndex = freq_index;
@@ -571,9 +558,6 @@ PVRSRV_ERROR SysDvfsInitialize(SYS_SPECIFIC_DATA *psSysSpecificData)
 	 */
 	rcu_read_lock();
 	opp_count = opp_get_opp_count(&gpsPVRLDMDev->dev);
-	// faux123 debug
-	pr_info("PVR opp_count: %i\n", opp_count);
-
 	if (opp_count < 1)
 	{
 		rcu_read_unlock();
@@ -604,9 +588,6 @@ PVRSRV_ERROR SysDvfsInitialize(SYS_SPECIFIC_DATA *psSysSpecificData)
 	for (i = 0; i < opp_count; i++)
 	{
 		opp = opp_find_freq_ceil(&gpsPVRLDMDev->dev, &freq);
-		// faux123 debug
-		pr_info("PVR opp freq_table[%i]: %lu\n", i, freq);
-
 		if (IS_ERR_OR_NULL(opp))
 		{
 			rcu_read_unlock();
