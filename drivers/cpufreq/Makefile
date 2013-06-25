@@ -16,6 +16,7 @@ obj-$(CONFIG_CPU_FREQ_GOV_PEGASUSQ)  	+= cpufreq_pegasusq.o
 obj-$(CONFIG_CPU_FREQ_GOV_DYNAMIC_INTERACTIVE)  += cpufreq_dynamic_interactive.o
 obj-$(CONFIG_CPU_FREQ_GOV_INTERACTIVEX)	+= cpufreq_interactivex.o
 obj-$(CONFIG_CPU_FREQ_GOV_HYPER)	+= cpufreq_hyper.o
+obj-$(CONFIG_CPU_FREQ_GOV_INTELLIDEMAND)  += cpufreq_intellidemand.o 
 
 # CPUfreq cross-arch helpers
 obj-$(CONFIG_CPU_FREQ_TABLE)		+= freq_table.o
