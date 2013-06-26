@@ -51,6 +51,7 @@
 #include <linux/kthread.h>
 #include <linux/mutex.h>
 #include <linux/slab.h>
+#include <linux/kernel_stat.h>
 #include <asm/cputime.h>
 
 #define CREATE_TRACE_POINTS
@@ -110,6 +111,9 @@ static unsigned long inter_staycycles;
 #define DEFAULT_STAYCYCLES_RESETFREQ 450000
 static u64 staycycles_resetfreq;
 
+#define DEFAULT_IO_IS_BUSY 1
+static bool io_is_busy;
+
 /*
  * Tunables end
  */
@@ -127,6 +131,42 @@ struct cpufreq_governor cpufreq_gov_ondemandplus = {
 	.max_transition_latency = 10000000,
 	.owner = THIS_MODULE,
 };
+
+static inline cputime64_t get_cpu_idle_time_jiffy(unsigned int cpu,
+						  cputime64_t *wall)
+{
+	u64 idle_time;
+	u64 cur_wall_time;
+	u64 busy_time;
+
+	cur_wall_time = jiffies64_to_cputime64(get_jiffies_64());
+
+	busy_time  = cputime64_add(busy_time, kstat_cpu(cpu).cpustat.user);
+	busy_time += cputime64_add(busy_time, kstat_cpu(cpu).cpustat.system);
+	busy_time += cputime64_add(busy_time, kstat_cpu(cpu).cpustat.irq);
+	busy_time += cputime64_add(busy_time, kstat_cpu(cpu).cpustat.softirq);
+	busy_time += cputime64_add(busy_time, kstat_cpu(cpu).cpustat.steal);
+	busy_time += cputime64_add(busy_time, kstat_cpu(cpu).cpustat.nice);
+
+	idle_time = cur_wall_time - busy_time;
+	if (wall)
+		*wall = jiffies_to_usecs(cur_wall_time);
+
+	return jiffies_to_usecs(idle_time);
+}
+
+static inline cputime64_t get_cpu_idle_time(unsigned int cpu,
+					    cputime64_t *wall)
+{
+	u64 idle_time = get_cpu_idle_time_us(cpu, wall);
+
+	if (idle_time == -1ULL)
+		idle_time = get_cpu_idle_time_jiffy(cpu, wall);
+	else if (!io_is_busy)
+		idle_time += get_cpu_iowait_time_us(cpu, wall);
+
+	return idle_time;
+}
 
 static void cpufreq_ondemandplus_timer(unsigned long data)
 {
@@ -168,7 +208,7 @@ static void cpufreq_ondemandplus_timer(unsigned long data)
 
 	time_in_idle = pcpu->time_in_idle;
 	idle_exit_time = pcpu->idle_exit_time;
-	now_idle = get_cpu_idle_time_us(data, &pcpu->timer_run_time);
+	now_idle = get_cpu_idle_time(data, &pcpu->timer_run_time);
 	smp_wmb();
 
 	/* If we raced with cancelling a timer, skip. */
@@ -426,7 +466,7 @@ rearm:
 		/* 
 		 * Re-arm timer
 		 */				
-		pcpu->time_in_idle = get_cpu_idle_time_us(
+		pcpu->time_in_idle = get_cpu_idle_time(
 			data, &pcpu->idle_exit_time);
 		if (!low_timer_rate) {
 			mod_timer(&pcpu->cpu_timer,
@@ -475,7 +515,7 @@ static void cpufreq_ondemandplus_idle_start(void)
 		 * the CPUFreq driver.
 		 */
 		if (!pending) {
-			pcpu->time_in_idle = get_cpu_idle_time_us(
+			pcpu->time_in_idle = get_cpu_idle_time(
 				smp_processor_id(), &pcpu->idle_exit_time);
 			pcpu->timer_idlecancel = 0;
 			mod_timer(&pcpu->cpu_timer,
@@ -526,7 +566,7 @@ static void cpufreq_ondemandplus_idle_end(void)
 	    pcpu->timer_run_time >= pcpu->idle_exit_time &&
 	    pcpu->governor_enabled) {
 		pcpu->time_in_idle =
-			get_cpu_idle_time_us(smp_processor_id(),
+			get_cpu_idle_time(smp_processor_id(),
 					     &pcpu->idle_exit_time);
 		pcpu->timer_idlecancel = 0;
 		mod_timer(&pcpu->cpu_timer,
@@ -848,6 +888,28 @@ static ssize_t store_staycycles_resetfreq(struct kobject *kobj,
 static struct global_attr staycycles_resetfreq_attr = __ATTR(staycycles_resetfreq, 0644,
 		show_staycycles_resetfreq, store_staycycles_resetfreq);
 
+static ssize_t show_io_is_busy(struct kobject *kobj,
+			struct attribute *attr, char *buf)
+{
+	return sprintf(buf, "%u\n", io_is_busy);
+}
+
+static ssize_t store_io_is_busy(struct kobject *kobj,
+			struct attribute *attr, const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = kstrtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+	io_is_busy = val;
+	return count;
+}
+
+static struct global_attr io_is_busy_attr = __ATTR(io_is_busy, 0644,
+		show_io_is_busy, store_io_is_busy);
+
 static struct attribute *ondemandplus_attributes[] = {
 	&timer_rate_attr.attr,
 	&up_threshold_attr.attr,
@@ -856,6 +918,7 @@ static struct attribute *ondemandplus_attributes[] = {
 	&inter_lofreq_attr.attr,
 	&inter_staycycles_attr.attr,
 	&staycycles_resetfreq_attr.attr,
+	&io_is_busy_attr.attr,
 	NULL,
 };
 
@@ -886,7 +949,7 @@ static int cpufreq_governor_ondemandplus(struct cpufreq_policy *policy,
 			pcpu->target_freq = policy->cur;
 			pcpu->freq_table = freq_table;
 			pcpu->target_set_time_in_idle =
-				get_cpu_idle_time_us(j,
+				get_cpu_idle_time(j,
 					     &pcpu->target_set_time);
 			pcpu->governor_enabled = 1;
 			smp_wmb();
@@ -976,6 +1039,7 @@ static int __init cpufreq_ondemandplus_init(void)
 	inter_lofreq = DEFAULT_INTER_LOFREQ;
 	inter_staycycles = DEFAULT_INTER_STAYCYCLES;
 	staycycles_resetfreq = DEFAULT_STAYCYCLES_RESETFREQ;
+	io_is_busy = DEFAULT_IO_IS_BUSY;
 
 	/* Initalize per-cpu timers */
 	for_each_possible_cpu(i) {
