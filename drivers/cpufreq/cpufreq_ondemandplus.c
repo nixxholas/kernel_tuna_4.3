@@ -93,10 +93,10 @@ static struct mutex set_speed_lock;
 #define DEFAULT_TIMER_RATE (20 * USEC_PER_MSEC)
 static unsigned long timer_rate;
 
-#define DEFAULT_UP_THRESHOLD 87
+#define DEFAULT_UP_THRESHOLD 92
 static unsigned long up_threshold;
 
-#define DEFAULT_DOWN_DIFFERENTIAL 58
+#define DEFAULT_DOWN_DIFFERENTIAL 59
 static unsigned long down_differential;
 
 #define DEFAULT_INTER_HIFREQ 1036800
