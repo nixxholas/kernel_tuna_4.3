@@ -1136,11 +1136,8 @@ void do_timer(unsigned long ticks)
 {
 	jiffies_64 += ticks;
 	update_wall_time();
-<<<<<<< HEAD
-=======
 	sched_clock_clksrc_update();
 	prepare_calc_load();
->>>>>>> 9016aa6... [PATCHv2 1/2] sched: Folding nohz load accounting more accurate
 	calc_global_load(ticks);
 }
 
