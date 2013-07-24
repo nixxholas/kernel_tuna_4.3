@@ -329,22 +329,10 @@ uint dhd_console_ms = 0;
 module_param(dhd_console_ms, uint, 0644);
 #endif /* defined(DHD_DEBUG) */
 
-/* Control wifi power mode, DTIM skipping 
- * and packet filter during sleep
- * /sys/module/bcmdhd/wifi_pm
- * /sys/module/bcmdhd/dtim_skip_override
- * /sys/module/bcmdhd/packet_filter_override
- */
 #if defined(CONFIG_HAS_EARLYSUSPEND)
-uint wifi_pm = 0;
-module_param(wifi_pm, uint, 0644);
-
-uint dtim_skip_override = 0;
-module_param(dtim_skip_override, uint, 0644);
-
-uint packet_filter_override = 0;
-module_param(packet_filter_override, uint, 0644);
-#endif /* defined(CONFIG_HAS_EARLYSUSPEND) */
+bool wifi_fast = false;
+module_param(wifi_fast, bool, 0644);
+#endif
 
 /* ARP offload agent mode : enable ARP Peer Auto-Reply */
 uint dhd_arp_mode = ARP_OL_AGENT | ARP_OL_PEER_AUTO_REPLY;
@@ -547,13 +535,18 @@ static void dhd_set_packet_filter(int value, dhd_pub_t *dhd)
 
 static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 {
+#if !defined(SUPPORT_PM2_ONLY)
 	int power_mode = PM_MAX;
-	if (wifi_pm == 1)
-		power_mode = PM_FAST;
+#endif
 	/* wl_pkt_filter_enable_t	enable_parm; */
 	char iovbuf[32];
 	int bcn_li_dtim = 3;
 	uint roamvar = 1;
+
+#if !defined(SUPPORT_PM2_ONLY)
+	if (wifi_fast)
+		power_mode = PM_FAST;
+#endif
 
 	DHD_TRACE(("%s: enter, value = %d in_suspend=%d\n",
 		__FUNCTION__, value, dhd->in_suspend));
@@ -565,21 +558,19 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 			/* Kernel suspended */
 			DHD_ERROR(("%s: force extra Suspend setting\n", __FUNCTION__));
 
+#if !defined(SUPPORT_PM2_ONLY)
 			dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
 			                 sizeof(power_mode), TRUE, 0);
+#endif
 
 			/* Enable packet filter, only allow unicast packet to send up */
-			if (packet_filter_override == 0)
-				dhd_set_packet_filter(1, dhd);
+			dhd_set_packet_filter(1, dhd);
 
 			/* If DTIM skip is set up as default, force it to wake
 			 * each third DTIM for better power savings.  Note that
 			 * one side effect is a chance to miss BC/MC packet.
 			 */
-			if (dtim_skip_override == 0)
-				bcn_li_dtim = dhd_get_dtim_skip(dhd);
-			else
-				bcn_li_dtim = dtim_skip_override - 1;
+			bcn_li_dtim = dhd_get_dtim_skip(dhd);
 			bcm_mkiovar("bcn_li_dtim", (char *)&bcn_li_dtim,
 				4, iovbuf, sizeof(iovbuf));
 			dhd_wl_ioctl_cmd(dhd, WLC_SET_VAR, iovbuf, sizeof(iovbuf), TRUE, 0);
@@ -593,9 +584,11 @@ static int dhd_set_suspend(int value, dhd_pub_t *dhd)
 			/* Kernel resumed  */
 			DHD_ERROR(("%s: Remove extra suspend setting\n", __FUNCTION__));
 
+#if !defined(SUPPORT_PM2_ONLY)
 			power_mode = PM_FAST;
 			dhd_wl_ioctl_cmd(dhd, WLC_SET_PM, (char *)&power_mode,
 			                 sizeof(power_mode), TRUE, 0);
+#endif
 
 			/* disable pkt filter */
 			dhd_set_packet_filter(0, dhd);
