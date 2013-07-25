@@ -367,7 +367,7 @@ config CPU_FREQ_GOV_HOTPLUG
 
 config CPU_FREQ_GOV_AMPLUG
 	tristate "'amplug' cpufreq governor"
-	depends on CPU_FREQ && NO_HZ && AMPLUG_CPU
+	depends on CPU_FREQ && NO_HZ && HOTPLUG_CPU
 	help
 	  'amplug' - this driver mimics the frequency scaling behavior
 	  in 'ondemand', but with several key differences.  First is
