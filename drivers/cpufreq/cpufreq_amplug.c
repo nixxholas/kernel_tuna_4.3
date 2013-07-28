@@ -217,7 +217,7 @@ static ssize_t store_down_threshold(struct kobject *a, struct attribute *b,
 	return count;
 }
 
-static ssize_t store_amplug_in_sampling_periods(struct kobject *a,
+static ssize_t store_hotplug_in_sampling_periods(struct kobject *a,
 		struct attribute *b, const char *buf, size_t count)
 {
 	unsigned int input;
