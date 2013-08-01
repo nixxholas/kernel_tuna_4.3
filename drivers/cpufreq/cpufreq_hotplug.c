@@ -30,20 +30,20 @@
 #include <linux/err.h>
 #include <linux/slab.h>
 
-/* greater than 80% avg load across online CPUs increases frequency */
-#define DEFAULT_UP_FREQ_MIN_LOAD			(80)
+/* greater than 85% avg load across online CPUs increases frequency */
+#define DEFAULT_UP_FREQ_MIN_LOAD			(85)
 
-/* Keep 10% of idle under the up threshold when decreasing the frequency */
-#define DEFAULT_FREQ_DOWN_DIFFERENTIAL			(10)
+/* Keep 12% of idle under the up threshold when decreasing the frequency */
+#define DEFAULT_FREQ_DOWN_DIFFERENTIAL			(12)
 
-/* less than 35% avg load across online CPUs decreases frequency */
-#define DEFAULT_DOWN_FREQ_MAX_LOAD			(35)
+/* less than 40% avg load across online CPUs decreases frequency */
+#define DEFAULT_DOWN_FREQ_MAX_LOAD			(40)
 
 /* default sampling period (uSec) is bogus; 10x ondemand's default for x86 */
 #define DEFAULT_SAMPLING_PERIOD				(100000)
 
 /* default number of sampling periods to average before hotplug-in decision */
-#define DEFAULT_HOTPLUG_IN_SAMPLING_PERIODS		(5)
+#define DEFAULT_HOTPLUG_IN_SAMPLING_PERIODS		(8)
 
 /* default number of sampling periods to average before hotplug-out decision */
 #define DEFAULT_HOTPLUG_OUT_SAMPLING_PERIODS		(20)
@@ -56,7 +56,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 static
 #endif
 struct cpufreq_governor cpufreq_gov_hotplug = {
-       .name                   = "hotplug",
+       .name                   = "amplug",
        .governor               = cpufreq_governor_dbs,
        .owner                  = THIS_MODULE,
 };
