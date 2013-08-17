@@ -96,6 +96,8 @@ extern void xapic_wait_icr_idle(void);
 extern u32 safe_xapic_wait_icr_idle(void);
 extern void xapic_icr_write(u32, u32);
 extern int setup_profiling_timer(unsigned int);
+-  unsigned int time_offset;
+-  struct page *time_page;
 
 static inline void native_apic_mem_write(u32 reg, u32 v)
 {
