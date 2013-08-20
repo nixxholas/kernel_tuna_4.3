@@ -164,11 +164,7 @@ int res_counter_memparse_write_strategy(const char *buf,
 	if (*end != '\0')
 		return -EINVAL;
 
-	if (PAGE_ALIGN(*res) >= *res)
-		*res = PAGE_ALIGN(*res);
-	else
-		*res = RES_COUNTER_MAX;
-
+	*res = PAGE_ALIGN(*res);
 	return 0;
 }
 
