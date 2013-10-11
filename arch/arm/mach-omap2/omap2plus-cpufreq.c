@@ -69,11 +69,6 @@ static unsigned int screen_on_min_freq;
 static bool omap_cpufreq_ready;
 static bool omap_cpufreq_suspended;
 
-<<<<<<< HEAD
-=======
-
->>>>>>> f409521... Added sysfs option to set screen_on_min_freq
-static unsigned int omap_getspeed(unsigned int cpu)
 {
 	unsigned long rate;
 
@@ -495,11 +490,10 @@ struct freq_attr omap_cpufreq_attr_screen_off_freq = {
 	.store = store_screen_off_freq,
 };
 
-<<<<<<< HEAD
 static struct freq_attr *omap_cpufreq_attr[] = {
 	&cpufreq_freq_attr_scaling_available_freqs,
 	&omap_cpufreq_attr_screen_off_freq,
-=======
+
 static ssize_t show_screen_on_freq(struct cpufreq_policy *policy, char *buf)
 {
 	return sprintf(buf, "%u\n", screen_on_min_freq);
@@ -549,7 +543,6 @@ static struct freq_attr *omap_cpufreq_attr[] = {
 	&cpufreq_freq_attr_scaling_available_freqs,
 	&omap_cpufreq_attr_screen_off_freq,
 	&omap_cpufreq_attr_screen_on_freq,
->>>>>>> f409521... Added sysfs option to set screen_on_min_freq
 	NULL,
 };
 
