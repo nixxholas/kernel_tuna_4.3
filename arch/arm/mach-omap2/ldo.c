@@ -15,6 +15,7 @@
 #include <linux/init.h>
 
 #include <plat/cpu.h>
+
 #include "voltage.h"
 #include "ldo.h"
 
@@ -117,7 +118,7 @@ static int _abb_clear_tranx(struct voltagedomain *voltdm,
 }
 
 /**
- * _abb_set_abb() - helper to actually set ABB (NOMINAL/FAST)
+ * _abb_set_abb() - helper to actually set ABB (NOMINAL/FAST/SLOW)
  * @voltdm:	voltage domain we are operating on
  * @abb_type:	ABB type we want to set
  */
