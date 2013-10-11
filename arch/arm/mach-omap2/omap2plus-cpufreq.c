@@ -416,14 +416,10 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
 	}
 
 	/* FIXME: what's the actual transition time? */
-<<<<<<< HEAD
 	policy->cpuinfo.transition_latency = 30 * 1000;
 #ifdef CONFIG_CUSTOM_VOLTAGE
 	customvoltage_register_freqmutex(&omap_cpufreq_lock);
 #endif
-=======
-	policy->cpuinfo.transition_latency = 30000;
->>>>>>> 67796a5... removed OPP25 fuse, some cleaning
 
 	return 0;
 
