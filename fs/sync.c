@@ -18,14 +18,13 @@
 #include <linux/backing-dev.h>
 #include "internal.h"
 
-<<<<<<< HEAD
 #ifdef CONFIG_FSYNC_CONTROL
 bool fsync_enabled = true;
 module_param(fsync_enabled, bool, 0755);
-=======
+#endif
+
 #ifdef CONFIG_DYNAMIC_FSYNC
 extern bool early_suspend_active;
->>>>>>> 594e40a... fs/dyn_sync_cntrl: dynamic sync control - Thanks Faux123
 #endif
 
 #define VALID_FLAGS (SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE| \
@@ -258,37 +257,33 @@ static int do_fsync(unsigned int fd, int datasync)
 
 SYSCALL_DEFINE1(fsync, unsigned int, fd)
 {
-<<<<<<< HEAD
+
 #ifdef CONFIG_FSYNC_CONTROL
 	if (!fsync_enabled)
 			return 0;
 #endif
-			
-=======
+		
 #ifdef CONFIG_DYNAMIC_FSYNC
 	if (!early_suspend_active)
 		return 0;
 	else
 #endif
->>>>>>> 594e40a... fs/dyn_sync_cntrl: dynamic sync control - Thanks Faux123
 	return do_fsync(fd, 0);
 }
 
 SYSCALL_DEFINE1(fdatasync, unsigned int, fd)
 {
-<<<<<<< HEAD
+
 #ifdef CONFIG_FSYNC_CONTROL
 	if (!fsync_enabled)
 			return 0;
 #endif
 			
-=======
 #ifdef CONFIG_DYNAMIC_FSYNC
 	if (!early_suspend_active)
 		return 0;
 	else
 #endif
->>>>>>> 594e40a... fs/dyn_sync_cntrl: dynamic sync control - Thanks Faux123
 	return do_fsync(fd, 1);
 }
 
