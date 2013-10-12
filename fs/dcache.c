@@ -77,10 +77,7 @@
  *   dentry1->d_lock
  *     dentry2->d_lock
  */
-#define DEFAULT_VFS_CACHE_PRESSURE 45
-int sysctl_vfs_cache_pressure __read_mostly, resume_cache_pressure;
-int suspend_cache_pressure = 10;
-
+int sysctl_vfs_cache_pressure __read_mostly = 45;
 EXPORT_SYMBOL_GPL(sysctl_vfs_cache_pressure);
 
 static __cacheline_aligned_in_smp DEFINE_SPINLOCK(dcache_lru_lock);
@@ -3036,15 +3033,12 @@ EXPORT_SYMBOL(find_inode_number);
 
 static void cpressure_early_suspend(struct early_suspend *handler)
 {
-	if (sysctl_vfs_cache_pressure != resume_cache_pressure)
-		resume_cache_pressure = sysctl_vfs_cache_pressure;
-
-	sysctl_vfs_cache_pressure = suspend_cache_pressure;
+	sysctl_vfs_cache_pressure = 10;
 }
 
 static void cpressure_late_resume(struct early_suspend *handler)
 {
-	sysctl_vfs_cache_pressure = resume_cache_pressure;
+	sysctl_vfs_cache_pressure = 45;
 }
 
 static struct early_suspend cpressure_suspend = {
@@ -3127,9 +3121,6 @@ EXPORT_SYMBOL(d_genocide);
 
 void __init vfs_caches_init_early(void)
 {
-	sysctl_vfs_cache_pressure = resume_cache_pressure =
-			DEFAULT_VFS_CACHE_PRESSURE;
-
 	dcache_init_early();
 	inode_init_early();
 }
