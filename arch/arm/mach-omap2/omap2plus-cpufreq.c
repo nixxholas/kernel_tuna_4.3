@@ -416,11 +416,8 @@ static int __cpuinit omap_cpu_init(struct cpufreq_policy *policy)
 	}
 
 	/* FIXME: what's the actual transition time? */
-<<<<<<< HEAD
 	policy->cpuinfo.transition_latency = 30 * 1000;
-=======
 	policy->cpuinfo.transition_latency = 30000;
->>>>>>> dcbe9f7... Added Custom Voltage version 3.
 #ifdef CONFIG_CUSTOM_VOLTAGE
 	customvoltage_register_freqmutex(&omap_cpufreq_lock);
 #endif
