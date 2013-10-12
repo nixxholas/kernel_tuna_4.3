@@ -775,37 +775,12 @@ static struct notifier_block __cpuinitdata ratelimit_nb = {
 
 static void dirty_early_suspend(struct early_suspend *handler)
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
 	dirty_writeback_interval = 2000;
-=======
-	if (dirty_writeback_interval != resume_dirty_writeback_interval)
-		resume_dirty_writeback_interval = dirty_writeback_interval;
-	if (dirty_expire_interval != resume_dirty_expire_interval)
-		resume_dirty_expire_interval = dirty_expire_interval;
-
-	dirty_writeback_interval = suspend_dirty_writeback_interval;
-	dirty_expire_interval = suspend_dirty_expire_interval;
->>>>>>> de041d5... fs/dache.c / mm/page-writeback.c: allow modification of dirty_-values and cache_pressure despite the dynamic suspend/resume values
-=======
-	dirty_writeback_interval = 2000;
-	dirty_expire_interval = 1000;
->>>>>>> parent of de041d5... fs/dache.c / mm/page-writeback.c: allow modification of dirty_-values and cache_pressure despite the dynamic suspend/resume values
 }
 
 static void dirty_late_resume(struct early_suspend *handler)
 {
-<<<<<<< HEAD
-<<<<<<< HEAD
 	dirty_writeback_interval = 0;
-=======
-	dirty_writeback_interval = resume_dirty_writeback_interval;
-	dirty_expire_interval = resume_dirty_expire_interval;
->>>>>>> de041d5... fs/dache.c / mm/page-writeback.c: allow modification of dirty_-values and cache_pressure despite the dynamic suspend/resume values
-=======
-	dirty_writeback_interval = 0;
-	dirty_expire_interval = 200;
->>>>>>> parent of de041d5... fs/dache.c / mm/page-writeback.c: allow modification of dirty_-values and cache_pressure despite the dynamic suspend/resume values
 }
 
 static struct early_suspend dirty_suspend = {
