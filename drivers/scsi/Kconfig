@@ -2,8 +2,7 @@ menu "SCSI device support"
 
 config SCSI_MOD
        tristate
-       default y if SCSI=n || SCSI=y
-       default m if SCSI=m
+       default n
 
 config RAID_ATTRS
 	tristate "RAID Transport Class"
@@ -265,7 +264,7 @@ config SCSI_SCAN_ASYNC
 
 config SCSI_WAIT_SCAN
 	tristate  # No prompt here, this is an invisible symbol.
-	default m
+	default n
 	depends on SCSI
 	depends on MODULES
 # scsi_wait_scan is a loadable module which waits until all the async scans are
