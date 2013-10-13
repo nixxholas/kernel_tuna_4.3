@@ -36,7 +36,6 @@ snd-soc-tlv320aic32x4-objs := tlv320aic32x4.o
 snd-soc-tlv320dac33-objs := tlv320dac33.o
 snd-soc-twl4030-objs := twl4030.o
 snd-soc-twl6040-objs := twl6040.o
-CFLAGS_twl6040.o += -fno-aggressive-loop-optimizations
 snd-soc-omap-hdmi-codec-objs := omap-hdmi-codec.o
 snd-soc-uda134x-objs := uda134x.o
 snd-soc-uda1380-objs := uda1380.o
