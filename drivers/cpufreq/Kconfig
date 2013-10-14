@@ -142,6 +142,13 @@ config CPU_FREQ_DEFAULT_GOV_HOTPLUG
 	  the help section of the driver. Fallback governor will be the
 	  performance governor.
 
+config CPU_FREQ_DEFAULT_GOV_SMOOTHASS
+	bool "smoothass"
+	select CPU_FREQ_GOV_SMOOTHASS
+	select CPU_FREQ_GOV_PERFORMANCE
+	help
+	  Use the CPUFreq governor 'smoothass' as default.
+
 config CPU_FREQ_DEFAULT_GOV_AMPLUG
 	bool "amplug"
 	select CPU_FREQ_GOV_AMPLUG
@@ -362,6 +369,14 @@ config CPU_FREQ_GOV_HOTPLUG
 
 	  If you don't have one of these architectures or devices, use
 	  'ondemand' instead.
+
+	  If in doubt, say N.
+
+config CPU_FREQ_GOV_SMOOTHASS
+	tristate "'smoothass' cpufreq governor"
+	depends on CPU_FREQ
+	help
+	  smoothass' - a "slightly more agressive smartass" governor!
 
 	  If in doubt, say N.
 
